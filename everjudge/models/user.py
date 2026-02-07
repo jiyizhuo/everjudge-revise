@@ -4,6 +4,7 @@
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.orm import relationship
 
 from ..extensions import db
 
@@ -33,9 +34,44 @@ class User(UserMixin, db.Model):
         return bool(self.password_hash and check_password_hash(self.password_hash, password))
 
     @property
+    def is_guest(self) -> bool:
+        return self.role == "guest"
+
+    @property
+    def is_unauthorized(self) -> bool:
+        return self.role == "unauthorized"
+
+    @property
+    def is_user(self) -> bool:
+        return self.role == "user"
+
+    @property
     def is_admin(self) -> bool:
         return self.role == "admin"
 
     @property
+    def is_root(self) -> bool:
+        return self.role == "root"
+
+    @property
     def is_banned(self) -> bool:
         return self.role == "banned"
+
+    def has_permission(self, required_role: str) -> bool:
+        """
+        检查用户是否有足够的权限
+        权限等级：guest < unauthorized < user < admin < root
+        """
+        role_levels = {
+            "guest": 0,
+            "unauthorized": 1,
+            "user": 2,
+            "admin": 3,
+            "root": 4
+        }
+        user_level = role_levels.get(self.role, 0)
+        required_level = role_levels.get(required_role, 0)
+        return user_level >= required_level
+
+    # 关联
+    submissions = relationship('Submission', back_populates='user')

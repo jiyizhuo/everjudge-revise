@@ -1,16 +1,125 @@
 {% extends "base.html" %}
 {% block title %}题目列表 - EverJudge{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h2 class="text-2xl font-bold text-slate-800 dark:text-white">题目列表</h2>
-        <p class="text-slate-500 dark:text-slate-400 text-sm">Phase 3 将在此接入题面与测试数据。</p>
+<div class="max-w-6xl mx-auto">
+    <div class="space-y-4 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h2 class="text-2xl font-bold text-slate-800 dark:text-white">题目列表</h2>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('problems.create') }}" class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                创建题目
+            </a>
+            {% endif %}
+        </div>
+        <!-- 筛选表单 -->
+        <div class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+            <form method="get" class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-grow">
+                    <label for="library" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">题库</label>
+                    <select name="library" id="library" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:border-primary">
+                        <option value="">全部题库</option>
+                        <option value="public" {% if request.args.get('library') == 'public' %}selected{% endif %}>主题库</option>
+                        <option value="private" {% if request.args.get('library') == 'private' %}selected{% endif %}>私有题库</option>
+                        <option value="remote" {% if request.args.get('library') == 'remote' %}selected{% endif %}>远程题库</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                        筛选
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
+    
+    {% if problems.items %}
+    <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+        <table class="w-full text-left">
+            <thead class="bg-slate-100 dark:bg-slate-800">
+                <tr>
+                    <th class="px-6 py-3 font-semibold text-slate-700 dark:text-slate-300">#</th>
+                    <th class="px-6 py-3 font-semibold text-slate-700 dark:text-slate-300">题目</th>
+                    <th class="px-6 py-3 font-semibold text-slate-700 dark:text-slate-300">题库</th>
+                    <th class="px-6 py-3 font-semibold text-slate-700 dark:text-slate-300">难度</th>
+                    <th class="px-6 py-3 font-semibold text-slate-700 dark:text-slate-300">时间限制</th>
+                    <th class="px-6 py-3 font-semibold text-slate-700 dark:text-slate-300">内存限制</th>
+                    <th class="px-6 py-3 font-semibold text-slate-700 dark:text-slate-300">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
+                {% for problem in problems.items %}
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ problem.id }}</td>
+                    <td class="px-6 py-4">
+                        <a href="{{ url_for('problems.detail', id=problem.id) }}" class="font-medium text-primary hover:underline">
+                            {{ problem.title }}
+                        </a>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium {% if problem.library == 'public' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400{% elif problem.library == 'private' %}bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400{% else %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400{% endif %}">
+                            {% if problem.library == 'public' %}主题库{% elif problem.library == 'private' %}私有题库{% else %}远程题库{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium {% if problem.difficulty == 0 %}bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400{% elif problem.difficulty == 1 %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400{% elif problem.difficulty == 2 %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400{% elif problem.difficulty == 3 %}bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400{% elif problem.difficulty == 4 %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400{% elif problem.difficulty == 5 %}bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400{% elif problem.difficulty == 6 %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% else %}bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400{% endif %}">
+                            {% if problem.difficulty == 0 %}入门{% elif problem.difficulty == 1 %}简单{% elif problem.difficulty == 2 %}中等{% elif problem.difficulty == 3 %}较难{% elif problem.difficulty == 4 %}困难{% elif problem.difficulty == 5 %}极难{% elif problem.difficulty == 6 %}噩梦{% else %}传说{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ problem.time_limit }}ms</td>
+                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ problem.memory_limit }}MB</td>
+                    <td class="px-6 py-4">
+                        <a href="{{ url_for('problems.detail', id=problem.id) }}" class="text-primary hover:underline mr-3">查看</a>
+                        {% if current_user.is_authenticated and current_user.is_admin %}
+                        <a href="{{ url_for('problems.edit', id=problem.id) }}" class="text-slate-600 dark:text-slate-400 hover:underline">编辑</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- 分页 -->
+    <div class="mt-6 flex justify-center">
+        <nav class="flex items-center space-x-1">
+            {% if problems.has_prev %}
+            <a href="{{ url_for('problems.index', page=problems.prev_num) }}" class="px-3 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">上一页</a>
+            {% else %}
+            <span class="px-3 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed">上一页</span>
+            {% endif %}
+            
+            {% for page_num in problems.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+            {% if page_num %}
+            {% if problems.page == page_num %}
+            <span class="px-3 py-1 rounded-md border border-primary bg-primary text-white font-medium">{{ page_num }}</span>
+            {% else %}
+            <a href="{{ url_for('problems.index', page=page_num) }}" class="px-3 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{{ page_num }}</a>
+            {% endif %}
+            {% else %}
+            <span class="px-3 py-1">...</span>
+            {% endif %}
+            {% endfor %}
+            
+            {% if problems.has_next %}
+            <a href="{{ url_for('problems.index', page=problems.next_num) }}" class="px-3 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">下一页</a>
+            {% else %}
+            <span class="px-3 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed">下一页</span>
+            {% endif %}
+        </nav>
+    </div>
+    {% else %}
     <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
         <div class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
             <svg class="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
             <p>暂无题目，敬请期待。</p>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+            <p class="mt-2">
+                <a href="{{ url_for('problems.create') }}" class="text-primary hover:underline">创建第一个题目</a>
+            </p>
+            {% endif %}
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

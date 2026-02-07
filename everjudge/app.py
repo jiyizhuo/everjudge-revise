@@ -96,6 +96,22 @@ def create_app(config_path: str | None = None) -> Flask:
     @app.context_processor
     def inject_theme():
         return {"theme_primary": app.config.get("THEME_PRIMARY", "#39C5BB")}
+    
+    # 自定义过滤器
+    @app.template_filter('read_file')
+    def read_file(path):
+        """
+        读取文件内容
+        """
+        import os
+        problem_id = path.split('/')[1].split('.')[0] if '/' in path else ''
+        if problem_id.isdigit():
+            problems_dir = app.config.get('PROBLEMS_DIR', 'data/problems')
+            full_path = os.path.join(problems_dir, problem_id, path)
+            if os.path.exists(full_path):
+                with open(full_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+        return ''
 
     @app.before_request
     def log_request():

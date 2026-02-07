@@ -2,13 +2,16 @@
 认证蓝图：登录、注册、登出。
 """
 import logging
-from datetime import datetime
+import secrets
+import string
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, current_user
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
 from ..extensions import db
 from ..models import User
-from ..forms.auth import LoginForm, RegisterForm
+from ..forms.auth import LoginForm, RegisterForm, ForgotPasswordForm, ResetPasswordForm
 
 bp = Blueprint("auth", __name__)
 logger = logging.getLogger(__name__)
@@ -16,6 +19,26 @@ logger = logging.getLogger(__name__)
 
 def _root_username():
     return current_app.config.get("ROOT_USERNAME", "root")
+
+
+def _generate_token(user_id):
+    """
+    生成重置密码令牌
+    """
+    serializer = URLSafeTimedSerializer(current_app.config.get("SECRET_KEY"))
+    return serializer.dumps(user_id, salt="password-reset-salt")
+
+
+def _verify_token(token, expiration=3600):
+    """
+    验证重置密码令牌
+    """
+    serializer = URLSafeTimedSerializer(current_app.config.get("SECRET_KEY"))
+    try:
+        user_id = serializer.loads(token, salt="password-reset-salt", max_age=expiration)
+        return user_id
+    except SignatureExpired:
+        return None
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -90,3 +113,63 @@ def logout():
     logout_user()
     flash("已退出登录", "info")
     return redirect(url_for("main.index"))
+
+
+@bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    """
+    忘记密码页面
+    """
+    if current_user.is_authenticated:
+        return redirect(url_for("main.index"))
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        email = form.email.data.strip().lower()
+        user = db.session.query(User).filter_by(email=email).first()
+        if user:
+            # 生成重置密码令牌
+            token = _generate_token(user.id)
+            reset_url = url_for("auth.reset_password", token=token, _external=True)
+            
+            # 这里应该发送邮件，现在只是模拟
+            logger.info("Password reset requested for user: id=%s email=%s", user.id, user.email)
+            logger.info("Reset URL: %s", reset_url)
+            
+            # 模拟发送邮件成功
+            flash("重置密码链接已发送到您的邮箱，请查收", "success")
+            return redirect(url_for("auth.login"))
+        else:
+            # 即使邮箱不存在，也返回成功信息，防止邮箱枚举攻击
+            flash("重置密码链接已发送到您的邮箱，请查收", "success")
+            return redirect(url_for("auth.login"))
+    return render_template("auth/forgot_password.html", form=form)
+
+
+@bp.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    """
+    重置密码页面
+    """
+    if current_user.is_authenticated:
+        return redirect(url_for("main.index"))
+    
+    # 验证令牌
+    user_id = _verify_token(token)
+    if not user_id:
+        flash("重置密码链接已过期或无效", "error")
+        return redirect(url_for("auth.forgot_password"))
+    
+    user = db.session.query(User).get(user_id)
+    if not user:
+        flash("用户不存在", "error")
+        return redirect(url_for("auth.forgot_password"))
+    
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        logger.info("Password reset for user: id=%s username=%s", user.id, user.username)
+        flash("密码重置成功，请登录", "success")
+        return redirect(url_for("auth.login"))
+    
+    return render_template("auth/reset_password.html", form=form, token=token)

@@ -27,3 +27,7 @@ translations/*/LC_MESSAGES/*.mo
 
 # uv configs
 uv.toml
+
+# AI Agents
+.cursor/
+.trae/
