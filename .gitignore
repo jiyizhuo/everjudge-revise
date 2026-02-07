@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# 数据与配置（按需取消忽略）
+data/*.db
+data/problems/
+data/submissions/
+data/blog_uploads/
+logs/
+*.local.toml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# i18n
+translations/*/LC_MESSAGES/*.mo
+
+# uv configs
+uv.toml

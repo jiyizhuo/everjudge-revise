@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}题目列表 - EverJudge{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h2 class="text-2xl font-bold text-slate-800 dark:text-white">题目列表</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Phase 3 将在此接入题面与测试数据。</p>
+    </div>
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+        <div class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+            <svg class="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <p>暂无题目，敬请期待。</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

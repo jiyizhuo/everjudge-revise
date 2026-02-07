@@ -1,0 +1,67 @@
+# EverJudge 主配置文件 (TOML)
+
+[server]
+host = "0.0.0.0"
+port = 5000
+# 调试模式：true 时开启 DEBUG，日志更详细；也可用环境变量 FLASK_DEBUG=1 覆盖
+debug = true
+# uWSGI 部署时由 uwsgi.ini 覆盖
+
+[database]
+# 支持: sqlite, mysql, mariadb, oracle
+driver = "sqlite"
+# SQLite
+sqlite_path = "data/everjudge.db"
+# MySQL/MariaDB (当 driver 为 mysql 或 mariadb 时使用)
+# host = "localhost"
+# port = 3306
+# username = "everjudge"
+# password = "your_password"
+# database = "everjudge"
+# Oracle (当 driver 为 oracle 时使用)
+# dsn = "localhost:1521/ORCL"
+# username = "everjudge"
+# password = "your_password"
+
+[security]
+secret_key = "change-me-in-production-use-env-SECRET_KEY"
+session_cookie_secure = false
+session_cookie_httponly = true
+password_min_length = 6
+
+# 默认 root 用户：首次启动时自动创建；通过下方配置修改密码与是否允许登录
+[root]
+# 默认用户名（建议保持 root，仅当与现有用户冲突时可改）
+username = "root"
+# 密码：留空则 root 无法通过密码登录（可用 flask create-admin 提升其他用户为 admin）
+# 设置后会在每次应用启动时同步到 root 账户
+password = "root"
+# 是否允许 root 通过登录页登录（false 时仅能通过其他管理员或 CLI 管理）
+login_enabled = true
+
+[judge]
+# 评测机 RPC 地址 (Rust 评测后端)
+rpc_host = "127.0.0.1"
+rpc_port = 3726
+# 支持的编程语言在 judge/languages.toml 中配置
+
+[i18n]
+default_locale = "zh_CN"
+supported_locales = ["zh_CN", "en_US"]
+
+[storage]
+# 测试数据、用户上传等存储根目录
+data_root = "data"
+problems_dir = "data/problems"
+submissions_dir = "data/submissions"
+blog_uploads_dir = "data/blog_uploads"
+
+[plugins]
+# 是否启用插件系统
+enabled = true
+plugins_dir = "plugins"
+
+# 前端主题（仅主色调；深浅色由客户端根据系统偏好或用户切换决定）
+[theme]
+# 主色调（十六进制，默认青绿色）
+primary = "#39C5BB"
