@@ -26,10 +26,16 @@ def _configure_logging(app: Flask) -> None:
         fmt = "%(asctime)s [%(levelname)s] %(message)s"
     for h in app.logger.handlers:
         h.setFormatter(logging.Formatter(fmt))
-    # 让第三方库的日志跟随（可选：SQLAlchemy 等）
-    logging.getLogger("werkzeug").setLevel(logging.INFO)
-    if app.config.get("DEBUG"):
-        logging.getLogger("werkzeug").setLevel(logging.DEBUG)
+    # 让所有库的日志跟随
+    for logger_name in ["werkzeug", "bootstrap", "utils"]:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(level)
+        # 确保logger有handler
+        if not logger.handlers:
+            h = logging.StreamHandler()
+            h.setLevel(level)
+            h.setFormatter(logging.Formatter(fmt))
+            logger.addHandler(h)
     app.logger.debug("Logging configured: level=%s", logging.getLevelName(level))
 
 
@@ -81,6 +87,21 @@ def create_app(config_path: str | None = None) -> Flask:
         return db.session.get(User, int(user_id)) if user_id else None
 
     migrate.init_app(app, db)
+    
+    # 创建数据库表（如果不存在）
+    with app.app_context():
+        db.create_all()
+    
+    # 默认 root 用户（根据 config.toml [root] 创建/更新密码）
+    app.logger.info("Starting bootstrap root user")
+    try:
+        app.logger.info("Importing ensure_root_user")
+        from .bootstrap import ensure_root_user
+        app.logger.info("Calling ensure_root_user")
+        ensure_root_user(app)
+        app.logger.info("ensure_root_user completed")
+    except Exception as e:
+        app.logger.warning("Bootstrap root user skipped: %s", e)
 
     def get_locale():
         from flask import request
@@ -147,7 +168,6 @@ def create_app(config_path: str | None = None) -> Flask:
     # 读取评测机支持的语言列表
     try:
         from .config import _load_toml
-        import os
         judge_toml_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "judge-backend", "judge.toml")
         judge_config = _load_toml(judge_toml_path)
         supported_languages = judge_config.get("languages", {}).get("supported", [])
@@ -181,13 +201,6 @@ def create_app(config_path: str | None = None) -> Flask:
             ("java", "Java"),
             ("rust", "Rust")
         ]
-
-    # 默认 root 用户（根据 config.toml [root] 创建/更新密码）
-    try:
-        from .bootstrap import ensure_root_user
-        ensure_root_user(app)
-    except Exception as e:
-        app.logger.warning("Bootstrap root user skipped: %s", e)
 
     app.logger.info("EverJudge app ready (DEBUG=%s)", app.config.get("DEBUG"))
     return app

@@ -19,12 +19,12 @@ def login_required(f):
 
 
 def admin_required(f):
-    """要求当前用户为管理员。"""
+    """要求当前用户为管理员或根用户。"""
     @wraps(f)
     def inner(*args, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for("auth.login"))
-        if not getattr(current_user, "is_admin", False):
+        if not (getattr(current_user, "is_admin", False) or getattr(current_user, "is_root", False)):
             abort(403)
         return f(*args, **kwargs)
     return inner

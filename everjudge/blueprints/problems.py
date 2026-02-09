@@ -160,7 +160,7 @@ def edit(id):
 
 @bp.route("/<int:id>/delete", methods=["POST"])
 def delete(id):
-    if not current_user.is_authenticated or not current_user.is_admin:
+    if not current_user.is_authenticated or not (current_user.is_admin or current_user.is_root):
         flash("权限不足", "danger")
         return redirect(url_for("problems.index"))
     
