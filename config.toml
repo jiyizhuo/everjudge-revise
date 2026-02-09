@@ -43,7 +43,7 @@ login_enabled = true
 # 评测机 RPC 地址 (Rust 评测后端)
 rpc_host = "127.0.0.1"
 rpc_port = 3726
-# 支持的编程语言在 judge/languages.toml 中配置
+# 支持的编程语言在 judge-backend/judge.toml 中配置
 
 [i18n]
 default_locale = "zh_CN"

@@ -3,6 +3,7 @@
 """
 import os
 import shutil
+import zipfile
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, current_app
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
@@ -269,6 +270,8 @@ def add_testcase(id):
             input_path=os.path.join('testcases', input_filename),
             output_path=os.path.join('testcases', output_filename),
             score=form.score.data,
+            time_limit=form.time_limit.data,
+            memory_limit=form.memory_limit.data,
             is_sample=form.is_sample.data
         )
         db.session.add(testcase)
@@ -300,6 +303,98 @@ def delete_testcase(id, case_id):
     db.session.delete(testcase)
     db.session.commit()
     flash("测试用例删除成功", "success")
+    return redirect(url_for("problems.edit", id=id))
+
+
+@bp.route("/<int:id>/testcases/upload", methods=["POST"])
+@login_required
+@admin_required
+def upload_testcases_zip(id):
+    """
+    上传包含测试用例的zip文件
+    """
+    problem = Problem.query.get_or_404(id)
+    
+    # 检查权限
+    if problem.library == 'public':
+        if not (current_user.is_admin or current_user.is_root):
+            flash("权限不足，只有管理员可以修改主题库的题目", "danger")
+            return redirect(url_for("problems.detail", id=id))
+    else:
+        if not (current_user.is_admin or current_user.is_root or problem.author == current_user.username):
+            flash("权限不足，只有创建者和管理员可以修改该题目", "danger")
+            return redirect(url_for("problems.detail", id=id))
+    
+    zip_file = request.files.get('zip_file')
+    if not zip_file:
+        flash("请上传zip文件", "danger")
+        return redirect(url_for("problems.edit", id=id))
+    
+    # 检查文件类型
+    if not zip_file.filename.endswith('.zip'):
+        flash("请上传zip格式的文件", "danger")
+        return redirect(url_for("problems.edit", id=id))
+    
+    # 创建临时目录
+    temp_dir = os.path.join(current_app.config['PROBLEMS_DIR'], 'temp')
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    # 保存zip文件
+    zip_filename = secure_filename(f"testcases_{id}_{zip_file.filename}")
+    zip_path = os.path.join(temp_dir, zip_filename)
+    zip_file.save(zip_path)
+    
+    try:
+        # 解压zip文件
+        testcases_dir = os.path.join(current_app.config['PROBLEMS_DIR'], str(id), 'testcases')
+        
+        # 清空现有测试用例
+        for testcase in TestCase.query.filter_by(problem_id=id).all():
+            db.session.delete(testcase)
+        db.session.commit()
+        
+        # 删除现有测试用例文件
+        if os.path.exists(testcases_dir):
+            shutil.rmtree(testcases_dir)
+        os.makedirs(testcases_dir, exist_ok=True)
+        
+        # 解压zip文件
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(testcases_dir)
+        
+        # 创建测试用例记录
+        case_number = 1
+        for filename in sorted(os.listdir(testcases_dir)):
+            if filename.endswith('.in'):
+                input_filename = filename
+                output_filename = filename.replace('.in', '.out')
+                output_path = os.path.join(testcases_dir, output_filename)
+                
+                # 检查输出文件是否存在
+                if os.path.exists(output_path):
+                    testcase = TestCase(
+                        problem_id=id,
+                        case_number=case_number,
+                        input_path=os.path.join('testcases', input_filename),
+                        output_path=os.path.join('testcases', output_filename),
+                        score=10,  # 默认分数
+                        time_limit=problem.time_limit,  # 从题目级别继承时间限制
+                        memory_limit=problem.memory_limit,  # 从题目级别继承内存限制
+                        is_sample=False
+                    )
+                    db.session.add(testcase)
+                    case_number += 1
+        
+        db.session.commit()
+        flash(f"成功上传{case_number - 1}个测试用例", "success")
+        
+    except Exception as e:
+        flash(f"上传测试用例失败: {str(e)}", "danger")
+    finally:
+        # 清理临时文件
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+    
     return redirect(url_for("problems.edit", id=id))
 
 

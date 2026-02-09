@@ -1,0 +1,18 @@
+[server]
+host = "127.0.0.1"
+port = 3726
+max_threads = 4
+
+# 语言配置
+[languages]
+# 是否启用评测机
+enabled = true
+
+# 支持的语言列表
+supported = ["c", "cpp", "java", "javascript", "python_2", "python_3", "pascal", "common_lisp", "plain_text", "brainfuck", "r", "rust", "kotlin"]
+
+# 临时文件目录
+temp_dir = "./temp"
+
+# 测试用例目录
+test_cases_dir = "./test_cases"

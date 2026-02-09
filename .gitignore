@@ -31,3 +31,6 @@ uv.toml
 # AI Agents
 .cursor/
 .trae/
+
+# Rust
+judge-backend/target/

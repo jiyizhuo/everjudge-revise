@@ -27,18 +27,26 @@ class ProblemForm(FlaskForm):
 
 class SubmissionForm(FlaskForm):
     code = TextAreaField('代码', validators=[DataRequired()])
-    language = SelectField('编程语言', validators=[DataRequired()], choices=[
-        ('python3', 'Python 3'),
-        ('c', 'C'),
-        ('cpp', 'C++'),
-        ('java', 'Java'),
-        ('rust', 'Rust')
-    ])
+    language = SelectField('编程语言', validators=[DataRequired()])
     submit = SubmitField('提交')
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from flask import current_app
+        # 从app.config中获取支持的语言列表
+        self.language.choices = current_app.config.get('SUPPORTED_LANGUAGES', [
+            ('python3', 'Python 3'),
+            ('c', 'C'),
+            ('cpp', 'C++'),
+            ('java', 'Java'),
+            ('rust', 'Rust')
+        ])
 
 
 class TestCaseForm(FlaskForm):
     case_number = IntegerField('测试用例编号', validators=[DataRequired()])
     score = IntegerField('分值', validators=[DataRequired(), NumberRange(min=1, max=100)])
+    time_limit = IntegerField('时间限制 (毫秒)', validators=[Optional(), NumberRange(min=1, max=10000)])
+    memory_limit = IntegerField('内存限制 (MB)', validators=[Optional(), NumberRange(min=1, max=1024)])
     is_sample = BooleanField('是否为样例', default=False)
     submit = SubmitField('保存')

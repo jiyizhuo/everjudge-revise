@@ -1,0 +1,82 @@
+[server]
+host = "127.0.0.1"
+port = 3726
+max_threads = 4
+
+[languages.c]
+compile_command = "gcc {file} -o output.exe"
+run_command = "./output.exe"
+file_extension = ".c"
+needs_compilation = true
+
+[languages.cpp]
+compile_command = "g++ {file} -o output.exe"
+run_command = "./output.exe"
+file_extension = ".cpp"
+needs_compilation = true
+
+[languages.java]
+compile_command = "javac {file}"
+run_command = "java Main"
+file_extension = ".java"
+needs_compilation = true
+
+[languages.javascript]
+compile_command = ""
+run_command = "node {file}"
+file_extension = ".js"
+needs_compilation = false
+
+[languages.python_2]
+compile_command = ""
+run_command = "python2 {file}"
+file_extension = ".py"
+needs_compilation = false
+
+[languages.python_3]
+compile_command = ""
+run_command = "python3 {file}"
+file_extension = ".py"
+needs_compilation = false
+
+[languages.pascal]
+compile_command = "fpc {file}"
+run_command = "./code"
+file_extension = ".pas"
+needs_compilation = true
+
+[languages.common_lisp]
+compile_command = ""
+run_command = "sbcl --script {file}"
+file_extension = ".lisp"
+needs_compilation = false
+
+[languages.plain_text]
+compile_command = ""
+run_command = "cat {file}"
+file_extension = ".txt"
+needs_compilation = false
+
+[languages.brainfuck]
+compile_command = ""
+run_command = "bf {file}"
+file_extension = ".bf"
+needs_compilation = false
+
+[languages.r]
+compile_command = ""
+run_command = "Rscript {file}"
+file_extension = ".r"
+needs_compilation = false
+
+[languages.rust]
+compile_command = "rustc {file} -o output.exe"
+run_command = "./output.exe"
+file_extension = ".rs"
+needs_compilation = true
+
+[languages.kotlin]
+compile_command = "kotlinc {file} -include-runtime -d output.jar"
+run_command = "java -jar output.jar"
+file_extension = ".kt"
+needs_compilation = true

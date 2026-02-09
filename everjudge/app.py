@@ -144,6 +144,44 @@ def create_app(config_path: str | None = None) -> Flask:
         except Exception as e:
             app.logger.warning("Plugins load skipped: %s", e)
 
+    # 读取评测机支持的语言列表
+    try:
+        from .config import _load_toml
+        import os
+        judge_toml_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "judge-backend", "judge.toml")
+        judge_config = _load_toml(judge_toml_path)
+        supported_languages = judge_config.get("languages", {}).get("supported", [])
+        # 定义语言名称映射
+        language_names = {
+            "c": "C",
+            "cpp": "C++",
+            "java": "Java",
+            "javascript": "JavaScript",
+            "python_2": "Python 2",
+            "python_3": "Python 3",
+            "pascal": "Pascal",
+            "common_lisp": "Common Lisp",
+            "plain_text": "Plain Text",
+            "brainfuck": "Brainfuck",
+            "r": "R",
+            "rust": "Rust",
+            "kotlin": "Kotlin"
+        }
+        # 构建语言选项列表
+        language_choices = [(lang, language_names.get(lang, lang)) for lang in supported_languages]
+        app.config["SUPPORTED_LANGUAGES"] = language_choices
+        app.logger.info("Loaded %d supported languages from judge.toml", len(language_choices))
+    except Exception as e:
+        app.logger.warning("Failed to load supported languages: %s", e)
+        # 设置默认语言列表
+        app.config["SUPPORTED_LANGUAGES"] = [
+            ("python3", "Python 3"),
+            ("c", "C"),
+            ("cpp", "C++"),
+            ("java", "Java"),
+            ("rust", "Rust")
+        ]
+
     # 默认 root 用户（根据 config.toml [root] 创建/更新密码）
     try:
         from .bootstrap import ensure_root_user

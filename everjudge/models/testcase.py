@@ -13,6 +13,8 @@ class TestCase(db.Model):
     output_path = Column(String(255), nullable=False)
     score = Column(Integer, nullable=False, default=10)
     is_sample = Column(Boolean, default=False)
+    time_limit = Column(Integer, nullable=True)  # 单个测试用例的时间限制（毫秒）
+    memory_limit = Column(Integer, nullable=True)  # 单个测试用例的内存限制（MB）
 
     # 关联
     problem = relationship('Problem', back_populates='test_cases')

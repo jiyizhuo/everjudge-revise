@@ -19,7 +19,7 @@ def ensure_root_user(app) -> None:
                 username=root_username,
                 email=f"{root_username}@localhost",
                 nickname=root_username,
-                role="admin",
+                role="root",
             )
             root.set_password(root_password if root_password else "__disabled__")
             db.session.add(root)
