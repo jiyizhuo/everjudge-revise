@@ -1,0 +1,5 @@
+name = "hello_world"
+version = "1.0.0"
+description = "一个简单的示例插件，展示插件系统的基本功能"
+author = "EverJudge"
+hooks = ["before_request", "after_request"]

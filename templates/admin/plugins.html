@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}插件管理 - EverJudge{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">插件管理</h1>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if plugins|length == 0 %}
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+            <p class="text-gray-500">未发现任何插件。</p>
+            <p class="text-gray-500 text-sm mt-2">将插件放置在 <code>plugins</code> 目录下即可自动识别。</p>
+        </div>
+    {% else %}
+        <div class="grid gap-4">
+            {% for plugin in plugins %}
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-lg font-bold">{{ plugin.name }}</h2>
+                            <p class="text-gray-600 mt-1">{{ plugin.description }}</p>
+                            <div class="flex gap-4 mt-2 text-sm text-gray-500">
+                                <span>版本: {{ plugin.version }}</span>
+                                {% if plugin.author %}
+                                    <span>作者: {{ plugin.author }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {% if plugin.enabled %}
+                                <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-sm">已启用</span>
+                            {% elif plugin.loaded %}
+                                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm">已加载</span>
+                            {% else %}
+                                <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">已禁用</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        {% if plugin.enabled %}
+                            <form action="{{ url_for('admin.disable_plugin', name=plugin.name) }}" method="POST">
+                                <button type="submit" class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition">
+                                    禁用
+                                </button>
+                            </form>
+                        {% else %}
+                            <form action="{{ url_for('admin.enable_plugin', name=plugin.name) }}" method="POST">
+                                <button type="submit" class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition">
+                                    启用
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

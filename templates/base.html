@@ -45,6 +45,7 @@
                     <a href="{{ url_for('problems.index') }}" class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-primary-light hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium">题目</a>
                     {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_root) %}
                     <a href="{{ url_for('admin.users') }}" class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-primary-light hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium">用户管理</a>
+                    <a href="{{ url_for('admin.plugins') }}" class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-primary-light hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium">插件</a>
                     {% endif %}
                     <button type="button" id="theme-toggle" class="p-2 rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors" title="切换深浅色" aria-label="切换主题">
                         <svg class="w-5 h-5 dark:hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>

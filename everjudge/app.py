@@ -162,6 +162,20 @@ def create_app(config_path: str | None = None) -> Flask:
             from .plugins import load_plugins
             load_plugins(app)
             app.logger.info("Plugins loaded from %s", app.config.get("PLUGINS_DIR", "plugins"))
+
+            from .plugins import get_plugin_manager
+            manager = get_plugin_manager()
+            app.extensions["plugin_manager"] = manager
+
+            @app.before_request
+            def plugin_before_request():
+                manager.call_hooks("before_request")
+
+            @app.after_request
+            def plugin_after_request(response):
+                manager.call_hooks("after_request", response)
+                return response
+
         except Exception as e:
             app.logger.warning("Plugins load skipped: %s", e)
 
