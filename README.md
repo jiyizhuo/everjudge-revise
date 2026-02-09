@@ -8,7 +8,7 @@
 - **Phase 2** ✅ 账户系统（注册/登录/权限、WTForms、管理员 CLI）
 - **Phase 3** ✅ 题面管理、测试数据、评测系统集成
 - **Phase 4** ✅ Rust 评测机后端（支持 TOML 配置、多语言评测、多线程处理）
-- **Phase 5** 插件系统
+- **Phase 5** ✅ 插件系统（多语言支持、模板覆盖、评测机替换、EverLaunch CLI）
 - **Phase 6** 博客与讨论区
 - **Phase 7** 管理后台、i18n 完善、uWSGI 部署
 
@@ -32,7 +32,10 @@ uv venv
 .venv\Scripts\activate   # Windows
 uv pip install -r requirements.txt
 
-# 使用默认 config.toml（SQLite）
+# 使用 EverLaunch 启动（推荐）
+python el.py run
+
+# 或使用默认 config.toml（SQLite）
 python run.py
 # 或：flask --app everjudge run
 ```
@@ -43,7 +46,7 @@ python run.py
 python -m venv .venv
 .venv\Scripts\activate   # Windows
 pip install -r requirements.txt
-python run.py
+python el.py run
 ```
 
 访问 http://127.0.0.1:5000 。
@@ -80,16 +83,38 @@ python run.py
 ## 数据库迁移
 
 ```bash
-flask db init
-flask db migrate -m "描述"
-flask db upgrade
+# 初始化数据库迁移
+python el.py db init
+
+# 生成迁移脚本
+python el.py db migrate -m "描述"
+
+# 应用迁移
+python el.py db upgrade
+
+# 回滚迁移
+python el.py db downgrade
+
+# 查看当前版本
+python el.py db current
+
+# 标记版本
+python el.py db stamp <版本>
 ```
 
 ## 生产部署（uWSGI）
 
 ```bash
+# 安装 uWSGI
 pip install uwsgi
+
+# 创建日志目录
 mkdir -p logs
+
+# 使用 uWSGI 启动
+python el.py wsgi
+
+# 或直接使用 uWSGI
 uwsgi --ini uwsgi.ini
 ```
 
@@ -99,6 +124,7 @@ uwsgi --ini uwsgi.ini
 EverJudge/
 ├── config.toml          # 主配置
 ├── run.py               # 开发运行入口
+├── el.py                # EverLaunch CLI 入口（推荐）
 ├── wsgi.py              # uWSGI 入口
 ├── uwsgi.ini
 ├── babel.cfg            # i18n 提取配置
@@ -106,13 +132,20 @@ EverJudge/
 │   ├── app.py           # 应用工厂
 │   ├── config.py        # TOML 加载与多数据库 URL
 │   ├── extensions.py    # db, login_manager, migrate
-│   ├── blueprints/      # 路由蓝图
-│   ├── models/          # SQLAlchemy 模型
-│   └── plugins/         # 插件加载
+│   ├── blueprints/     # 路由蓝图
+│   ├── models/         # SQLAlchemy 模型
+│   ├── plugins/        # 插件系统（Phase 5）
+│   │   ├── manager.py  # 插件管理器
+│   │   ├── api.py      # 插件 API
+│   │   ├── i18n.py     # 多语言支持
+│   │   ├── template_overrides.py  # 模板覆盖
+│   │   └── judge_provider.py     # 评测机替换
+│   └── utils/          # 工具函数
+├── plugins/            # 插件目录
 ├── templates/
 ├── translations/        # Babel 翻译
-├── data/                # 数据目录（SQLite、题目、提交等）
-└── judge-backend/       # Rust 评测机（Phase 4）
+├── data/               # 数据目录（SQLite、题目、提交等）
+└── judge-backend/      # Rust 评测机（Phase 4）
 ```
 
 ## 评测机后端（Phase 4）
@@ -334,3 +367,201 @@ judge-backend/
 4. **日志输出**：评测机后端会在控制台输出详细的日志信息，可以通过观察日志来排查问题。
 
 5. **线程池配置**：如果评测性能不佳，可以调整 `judge.toml` 文件中的 `max_threads` 参数，根据服务器的 CPU 核心数设置合适的线程数。
+
+---
+
+## EverLaunch CLI（Phase 5）
+
+EverJudge 提供了一个独立的 CLI 工具 `el.py`，整合了所有命令行功能：
+
+```bash
+# 启动开发服务器（默认端口 5000）
+python el.py run
+
+# 指定端口启动
+python el.py run --port 8080
+
+# 启用调试模式
+python el.py run --debug
+```
+
+### 数据库命令
+
+```bash
+# 初始化数据库迁移
+python el.py db init
+
+# 生成迁移脚本
+python el.py db migrate -m "描述"
+
+# 应用迁移
+python el.py db upgrade
+
+# 回滚迁移
+python el.py db downgrade
+```
+
+### 用户管理
+
+```bash
+# 创建管理员
+python el.py create-admin --username admin --email admin@example.com
+
+# 创建普通用户
+python el.py create-user --username user --email user@example.com
+```
+
+### 插件管理
+
+```bash
+# 列出所有插件
+python el.py plugins list
+
+# 查看插件详情
+python el.py plugins info hello_world
+
+# 启用插件
+python el.py plugins enable hello_world
+
+# 禁用插件
+python el.py plugins disable hello_world
+
+# 安装插件
+python el.py plugins install /path/to/plugin
+
+# 卸载插件
+python el.py plugins uninstall hello_world
+```
+
+### 评测机管理
+
+```bash
+# 启动评测机（默认端口 3726）
+python el.py judge start
+
+# 指定端口启动
+python el.py judge start --port 3726
+
+# 构建评测机
+python el.py judge build
+```
+
+### 系统命令
+
+```bash
+# 查看系统状态
+python el.py status
+
+# 查看版本信息
+python el.py version
+
+# 列出所有路由
+python el.py routes
+```
+
+---
+
+## 插件系统（Phase 5）
+
+EverJudge 提供了一个功能强大的插件系统，支持插件扩展应用的各个方面。
+
+### 插件管理
+
+通过 CLI 管理插件：
+
+```bash
+# 列出所有插件
+python el.py plugins list
+
+# 查看插件详情
+python el.py plugins info hello_world
+
+# 启用插件
+python el.py plugins enable hello_world
+
+# 禁用插件
+python el.py plugins disable hello_world
+
+# 安装插件
+python el.py plugins install /path/to/plugin
+
+# 卸载插件
+python el.py plugins uninstall hello_world
+```
+
+通过管理后台管理插件：
+
+1. 使用管理员账户登录
+2. 点击导航栏的"插件"链接
+3. 查看所有已发现的插件
+4. 点击"启用"或"禁用"按钮控制插件状态
+
+### 插件系统详细文档
+
+插件系统的详细开发指南、API 参考和最佳实践请参阅 [PLUGINS.md](PLUGINS.md)。
+
+#### 快速链接
+
+- [插件目录结构](PLUGINS.md#插件目录结构)
+- [插件配置](PLUGINS.md#插件配置)
+- [插件入口](PLUGINS.md#插件入口)
+- [钩子系统](PLUGINS.md#钩子系统)
+- [多语言支持](PLUGINS.md#多语言支持)
+- [模板覆盖](PLUGINS.md#模板覆盖)
+- [评测机替换](PLUGINS.md#评测机替换)
+- [UI 模块](PLUGINS.md#ui模块)
+- [API 参考](PLUGINS.md#api参考)
+- [最佳实践](PLUGINS.md#最佳实践)
+
+#### 可用钩子
+
+| 钩子名 | 说明 | 回调参数 |
+|--------|------|----------|
+| `before_request` | 请求处理前 | 无 |
+| `after_request` | 请求处理后 | response |
+| `on_judge_complete` | 评测完成时 | result |
+| `on_submission_created` | 提交创建时 | submission |
+| `on_problem_created` | 题目创建时 | problem |
+| `on_user_registered` | 用户注册时 | user |
+
+#### 示例插件
+
+EverJudge 提供了一个示例插件 `hello_world`，位于 `plugins/hello_world/` 目录。该插件展示了基本的插件结构、钩子注册、路由添加等功能。
+
+### 插件系统详细文档
+
+插件系统的详细开发指南、API 参考和最佳实践请参阅 [PLUGINS.md](PLUGINS.md)。
+
+#### 快速链接
+
+- [插件目录结构](PLUGINS.md#插件目录结构)
+- [插件配置](PLUGINS.md#插件配置)
+- [插件入口](PLUGINS.md#插件入口)
+- [钩子系统](PLUGINS.md#钩子系统)
+- [多语言支持](PLUGINS.md#多语言支持)
+- [模板覆盖](PLUGINS.md#模板覆盖)
+- [评测机替换](PLUGINS.md#评测机替换)
+- [UI 模块](PLUGINS.md#ui模块)
+- [API 参考](PLUGINS.md#api参考)
+- [最佳实践](PLUGINS.md#最佳实践)
+
+#### 钩子快速参考
+
+| 钩子名 | 说明 | 回调参数 |
+|--------|------|----------|
+| `before_request` | 请求处理前 | 无 |
+| `after_request` | 请求处理后 | response |
+| `on_judge_complete` | 评测完成时 | result |
+| `on_submission_created` | 提交创建时 | submission |
+| `on_problem_created` | 题目创建时 | problem |
+| `on_user_registered` | 用户注册时 | user |
+
+#### 示例插件
+
+EverJudge 提供了一个示例插件 `hello_world`，位于 `plugins/hello_world/` 目录。该插件展示了基本的插件结构、钩子注册、路由添加等功能。
+
+## 相关链接
+
+- [项目主页](https://github.com/yourusername/EverJudge)
+- [问题反馈](https://github.com/yourusername/EverJudge/issues)
+- [插件开发文档](PLUGINS.md)

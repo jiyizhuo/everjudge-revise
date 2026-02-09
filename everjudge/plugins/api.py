@@ -1,7 +1,7 @@
 """
 插件API：提供给插件的实用工具函数。
 """
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Callable
 from flask import Flask, Blueprint, render_template, current_app, g
 from ..extensions import db
 from ..models import User, Problem, Submission, TestCase
@@ -74,6 +74,16 @@ class PluginAPI:
         self.register_hook("on_submission_created", f)
         return f
 
+    def on_problem_created(self, f):
+        """注册题目创建钩子。"""
+        self.register_hook("on_problem_created", f)
+        return f
+
+    def on_user_registered(self, f):
+        """注册用户注册钩子。"""
+        self.register_hook("on_user_registered", f)
+        return f
+
     def get_plugin_config(self, plugin_name: str, key: str, default: Any = None) -> Any:
         """获取插件配置。"""
         from .models import Plugin
@@ -127,3 +137,87 @@ class PluginAPI:
     def log_debug(self, message: str):
         """记录DEBUG级别日志。"""
         current_app.logger.debug(message)
+
+    def register_i18n_provider(self, plugin_name: str, provider):
+        """注册国际化提供者。"""
+        from .i18n import PluginI18nManager
+        manager = self.app.extensions.get("plugin_i18n_manager")
+        if manager:
+            manager.register_provider(plugin_name, provider)
+
+    def register_translations(
+        self,
+        plugin_name: str,
+        locale: str,
+        translations: Dict[str, str]
+    ):
+        """直接注册翻译。"""
+        from .i18n import PluginI18nManager
+        manager = self.app.extensions.get("plugin_i18n_manager")
+        if manager:
+            manager.register_translations(plugin_name, locale, translations)
+
+    def register_template_dir(self, plugin_name: str, templates_dir: str):
+        """注册插件模板目录以支持模板覆盖。"""
+        from .template_overrides import TemplateOverrideManager
+        manager = self.app.extensions.get("template_override_manager")
+        if manager:
+            manager.register_plugin_templates(plugin_name, templates_dir)
+
+    def add_ui_module(self, module):
+        """注册UI模块。"""
+        from .template_overrides import UIModuleRegistry
+        registry = self.app.extensions.get("ui_module_registry")
+        if registry:
+            registry.register(module)
+
+    def add_hook_ui(self, hook_name: str, module):
+        """在指定钩子点添加UI模块。"""
+        from .template_overrides import UIModuleRegistry
+        registry = self.app.extensions.get("ui_module_registry")
+        if registry:
+            registry.register(module, [hook_name])
+
+    def register_judge_provider(self, provider, as_default: bool = False):
+        """注册评测机提供者。"""
+        from .judge_provider import PluginJudgeManager
+        manager = self.app.extensions.get("judge_manager")
+        if manager:
+            manager.register_provider(provider, as_default)
+
+    def judge(self, request) -> Any:
+        """执行评测。"""
+        from .judge_provider import PluginJudgeManager, JudgeRequest
+        manager = self.app.extensions.get("judge_manager")
+        if manager:
+            if isinstance(request, dict):
+                request = JudgeRequest.from_dict(request)
+            return manager.judge(request)
+        return None
+
+    def is_language_supported(self, language: str) -> bool:
+        """检查语言是否被支持。"""
+        from .judge_provider import PluginJudgeManager
+        manager = self.app.extensions.get("judge_manager")
+        if manager:
+            return manager.is_language_supported(language)
+        return False
+
+    def add_cli_command(self, name: str, callback: Callable, **options):
+        """注册CLI命令。"""
+        from flask import Flask
+        if hasattr(self.app, 'cli'):
+            self.app.cli.command(name, **options)(callback)
+
+    def add_teardown(self, exc):
+        """注册请求清理函数。"""
+        from flask import Flask
+        self.app.teardown_request_callbacks.append(exc)
+
+    def add_url_value_preprocessor(self, f):
+        """注册URL值预处理器。"""
+        self.app.url_value_preprocessor(f)
+
+    def add_template_context_processor(self, f):
+        """注册模板上下文处理器。"""
+        self.app.context_processor(f)

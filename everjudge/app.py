@@ -167,6 +167,24 @@ def create_app(config_path: str | None = None) -> Flask:
             manager = get_plugin_manager()
             app.extensions["plugin_manager"] = manager
 
+            from .plugins.i18n import PluginI18nManager
+            i18n_manager = PluginI18nManager(app)
+            i18n_manager.init_app(app)
+            app.extensions["plugin_i18n_manager"] = i18n_manager
+            i18n_manager.add_template_filters(app)
+
+            from .plugins.template_overrides import TemplateOverrideManager, UIModuleRegistry
+            template_manager = TemplateOverrideManager(app)
+            template_manager.init_app(app)
+            app.extensions["template_override_manager"] = template_manager
+
+            ui_registry = UIModuleRegistry()
+            app.extensions["ui_module_registry"] = ui_registry
+
+            from .plugins.judge_provider import PluginJudgeManager
+            judge_manager = PluginJudgeManager()
+            app.extensions["judge_manager"] = judge_manager
+
             @app.before_request
             def plugin_before_request():
                 manager.call_hooks("before_request")
